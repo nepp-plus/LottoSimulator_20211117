@@ -2,9 +2,12 @@ package com.neppplus.lottosimulator_20211117
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.text.NumberFormat
 import java.util.*
@@ -15,17 +18,41 @@ class MainActivity : AppCompatActivity() {
     val mWinLottoNumArr = ArrayList<Int>()
     var mBonusNum = 0
 
-//    내가 쓴 금액? 합산 변수
+    //    내가 쓴 금액? 합산 변수
     var mUsedMoney = 0L  // Long 타입 (긴 숫자 표현) 명시
-//    당첨 금액? 합산 변수
+
+    //    당첨 금액? 합산 변수
     var mEarnedMoney = 0L
 
-    lateinit var mLottoNumTxtList : ArrayList<TextView>
+    lateinit var mLottoNumTxtList: ArrayList<TextView>
 
-    val mMyLottoNumArr = arrayListOf( 5, 17, 26, 30, 36, 42 )
+    val mMyLottoNumArr = arrayListOf(5, 17, 26, 30, 36, 42)
 
-//    등수별 당첨 횟수 목록
-    val mRankCountList = arrayListOf( 0, 0, 0, 0, 0, 0)
+    //    등수별 당첨 횟수 목록
+    val mRankCountList = arrayListOf(0, 0, 0, 0, 0, 0)
+
+    //    할일을 관리하는 클래스
+    lateinit var mHandler: Handler
+
+//    할일이 뭔지 작성 1) 로또 구매하기
+
+    val buyLottoRunnable = object : Runnable {
+        override fun run() {
+            //        쓴 돈이 1천만원이 안된다면 -> 다시 로또 구매
+            if (mUsedMoney <= 10000000) {
+                makeLottoNumbers()
+                makeBonusNum()
+                checkLottoRank()
+
+                mHandler.post(this)
+            }
+//        아니라면 반복 X
+            else {
+                Toast.makeText(this@MainActivity, "자동 구매를 중단합니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +62,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun setupEvents() {
+
+        btnAutoBuyLotto.setOnClickListener {
+
+//            핸들러에게 할일을 등록 (로또 한장 구매)
+            mHandler.post(buyLottoRunnable)
+
+        }
 
         btnBuyLotto.setOnClickListener {
 
@@ -57,15 +91,14 @@ class MainActivity : AppCompatActivity() {
         mUsedMoney += 1000
 
 
-
 //        내 숫자 6개가 -> 당첨번호 6개중 몇개나 맞췄는가?
 
         var correctCount = 0
 
-        for ( myNum  in  mMyLottoNumArr) {
+        for (myNum in mMyLottoNumArr) {
 
 //            맞췄는가? -> myNum이  당첨번호에 들어있는가?
-            if ( mWinLottoNumArr.contains(myNum) ) {
+            if (mWinLottoNumArr.contains(myNum)) {
 //                맞춘 갯수 증가
                 correctCount++
             }
@@ -89,15 +122,14 @@ class MainActivity : AppCompatActivity() {
 
 //                보너스번호 검사 => 보너스 번호가 내 번호안에 있는가?
 
-                if (mMyLottoNumArr.contains( mBonusNum )) {
+                if (mMyLottoNumArr.contains(mBonusNum)) {
                     Log.d("등수", "2등")
 
                     mEarnedMoney += 50000000
 
                     mRankCountList[1]++
                     txtRankCount2.text = "${mRankCountList[1]}회"
-                }
-                else {
+                } else {
                     Log.d("등수", "3등")
                     mEarnedMoney += 2000000
 
@@ -163,13 +195,13 @@ class MainActivity : AppCompatActivity() {
 
 //        6개의 당첨 번호 => 반복 횟수 명확 => for
 
-        for ( i  in  0 until 6) {
+        for (i in 0 until 6) {
 
 //            랜덤 숫자 추출 -> (제대로 된 숫자라면) 목록에 추가
 
             while (true) {
 
-                val randomNum =  (Math.random() * 45 + 1).toInt()
+                val randomNum = (Math.random() * 45 + 1).toInt()
 
 //                중복검사 : 당첨 숫자 목록에 내 숫자가 있는지?
 
@@ -194,10 +226,10 @@ class MainActivity : AppCompatActivity() {
 
 //        당첨 번호 6개 확인
 
-        for ( i  in  0 until 6 ) {
+        for (i in 0 until 6) {
 
 //            텍스트뷰[i]  =  당첨번호[i]
-            mLottoNumTxtList[i].text =  mWinLottoNumArr[i].toString()
+            mLottoNumTxtList[i].text = mWinLottoNumArr[i].toString()
 
         }
 
@@ -205,7 +237,16 @@ class MainActivity : AppCompatActivity() {
 
     fun setValues() {
 
-        mLottoNumTxtList = arrayListOf( txtLottoNum1, txtLottoNum2, txtLottoNum3, txtLottoNum4, txtLottoNum5, txtLottoNum6 )
+        mHandler = Handler(Looper.getMainLooper())
+
+        mLottoNumTxtList = arrayListOf(
+            txtLottoNum1,
+            txtLottoNum2,
+            txtLottoNum3,
+            txtLottoNum4,
+            txtLottoNum5,
+            txtLottoNum6
+        )
 
     }
 
